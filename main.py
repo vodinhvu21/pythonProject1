@@ -5,15 +5,14 @@ from gtts import gTTS
 import os
 from gpiozero import Button
 
-button = Button(23)
-button1 = Button(24)
-button2 = Button(18)
-button3 = Button(16)
-def scanQR(LinkExcel):
+
+def scanQR(LinkExcel, a):
     # LinkExcel là path của file Excel
+
     df = pandas.read_excel(LinkExcel)
     # doc file excel dinh kem
-    link = ''
+    va = ''
+    lin = ''
     # tao file link trong
     capture = cv2.VideoCapture(0)
     # tao mot doi tuong de doc anh
@@ -21,29 +20,35 @@ def scanQR(LinkExcel):
     # ma do QR trong opcv
     print("Đưa mã QR vào vị trí quét")
     speak("Đưa mã QR vào vị trí quét")
-    while True:
+    time_scan = time.time()
+    while time.time() < time_scan + a:
         _, img = capture.read()
-        val, pts, _ = det.detectAndDecode(img)
-        if val:
+        va, pts, _ = det.detectAndDecode(img)
+        if va:
             # val la cot name picture
-            print(val)
+            print(va)
+            time_scan = time.time()
             for i in range(0, 16, 1):
                 # luu 15 gia tri anh1
-                if (df.loc[i]['name'] == val):
-                    link = df.loc[i]['link']
-                    print(link)
+                if (df.loc[i]['name'] == va):
+                    lin = df.loc[i]['link']
+                    # print(lin)
                     # b = webbrowser.open(str(link))
                     # speak("Bạn đã chọn "+str(val))
                     # time.sleep(3)
                     # speak("Tiến hành vẽ")
                     break
-            if (link == ''):
-                print('Không có mã quét  ' + val)
+            if (lin == ''):
+                print('Không có mã quét  ' + va)
                 speak("Mã không hợp lệ, hãy quét lại ")
             else:
                 capture.release()
                 break
-    return val, link
+    if va == '' and lin == '':
+        print(' time out ')
+    return va, lin
+
+
 def speak(text):
     tts = gTTS(text=text, lang='vi', slow=False)  # ngoonngu "vi",tốc độ mặc định
     tts.save("speech.mp3")  # lưu file
@@ -53,56 +58,45 @@ def speak(text):
     os.remove("speech.mp3")  # xóa đi tránh vòng lặp
 
 
-
 if __name__ == '__main__':
     val = ""
     link = ""
-
-    p1 = p2 = 1
-    #speak("Nhập 1 để khởi động")
-    print("Nhập 1 để khởi động")
-    time_0 = time.time()
-    timeout_0 = 15
-
-    while int(time.time()) != int(time_0 + timeout_0):
+    button = Button(23)
+    button1 = Button(24)
+    button2 = Button(18)
+    # speak("Nhập 1 để để quét")
+    print("Nhập 1 để để quét")
+    time_start_0 = time.time()
+    time_out_0 = time_start_0 + 15
+    while time_start_0 < time_out_0:
         if button.is_pressed:
-            timeout_0 = -1
-            #("Nhập 2 để quét, e để thoát ")
-            print("Nhập 2 để quét, e để thoát ")
-            time_1 = time.time()
-            timeout_1 = 5
-            while time.time() < time_1 + timeout_1:
+            val, link = scanQR("Picture_Link.xlsx", 5)
+            # speak("đã chọn hình {} với {}".format(val, link))
+            print("đã chọn hình {} với {}".format(val, link))
+            if val == "" and link == '':
+                break
+            # speak("bạn đã chọn được hình mong muốn, nhập 3 để bắt đầu vẽ")
+            print("bạn đã chọn được hình mong muốn, nhập 3 để bắt đầu vẽ")
+            time_start_1 = time.time()
+            time_out_1 = time_start_1 + 15
+            while time.time() < time_out_1:
                 if button1.is_pressed:
-                    timeout_1 = 60 * 60
-                    val, link = scanQR("Picture_Link.xlsx")
-                    #speak("đã chọn hình {} với {}".format(val, link))
-                    print("đã chọn hình {} với {}".format(val, link))
-                    #speak("bạn đã chọn được hình mong muốn, nhập 3 để bắt đầu vẽ")
-                    print("bạn đã chọn được hình mong muốn, nhập 3 để bắt đầu vẽ")
-                    time_2 = time.time()
-                    timeout_2 = 30
-                    while time.time() < time_2 + timeout_2:
-
-                        if button2.is_pressed:
-                            timeout_2 = 3600
-                            print('dang ve')
-                            # speak("lệnh báo đang vẽ, và vẽ từng bước")
-                            time.sleep(5)
-                            # speak("lệnh báo vẽ xong")
-                            print('ve xong')
-                            # speak("nhập 2 để vẽ hình khác, e để tắt ")
-                            print("nhập 2 để vẽ hình khác, e để tắt ")
-                            time_1 = time.time()
-                            timeout_1 = 30
-                            break
+                    time_start_1 = time.time()
+                    time_out_1 = time_start_1 + 15
+                    print('dang ve')
+                    # speak("lệnh báo đang vẽ, và vẽ từng bước")
+                    time.sleep(5)
+                    # speak("lệnh báo vẽ xong")
+                    print('ve xong')
+                    # speak("nhập 2 để vẽ hình khác, e để tắt ")
+                    print("nhập 2 để vẽ hình khác, e để tắt ")
+                    time_1 = -1
+                    timeout_1 = 30
                     break
-
-                if button3.is_pressed:
-                    #speak("bạn đã thoát")
-                    print("bạn đã thoát")
-                    timeout_0 = 0
-                    break
-
             break
 
-
+        if button2.is_pressed:
+            # speak("bạn đã thoát")
+            print("bạn đã thoát")
+            timeout_0 = 0
+            break
